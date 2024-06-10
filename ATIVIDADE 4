@@ -1,0 +1,209 @@
+BD
+public class DatabaseConfig {
+private static final String URL = "jdbc:mysql://localhost:3306/sua_base_de_dados";
+private static final String USER = "seu_usuario";
+private static final String PASSWORD = "sua_senha";
+public static Connection getConnection() throws SQLException {
+return DriverManager.getConnection(URL, USER, PASSWORD);
+}
+}
+CLASSE ALUNO
+public class Aluno {
+private int id;
+private String nome;
+private int idade;
+private String curso;
+public int getId() { return id; }
+public void setId(int id) { this.id = id; }
+public String getNome() { return nome; }
+public void setNome(String nome) { this.nome = nome; }
+public int getIdade() { return idade; }
+public void setIdade(int idade) { this.idade = idade; }
+public String getCurso() { return curso; }
+public void setCurso(String curso) { this.curso = curso; }
+}
+OPERAÇÕES JDBC
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+public class AlunoDAO {
+public void inserirAluno(Aluno aluno) throws SQLException {
+String sql = "INSERT INTO alunos (nome, idade, curso) VALUES (?, ?, ?)";
+try (Connection conn = DatabaseConfig.getConnection();
+PreparedStatement stmt = conn.prepareStatement(sql)) {
+stmt.setString(1, aluno.getNome());
+stmt.setInt(2, aluno.getIdade());
+stmt.setString(3, aluno.getCurso());
+stmt.executeUpdate();
+}
+}
+public void alterarAluno(Aluno aluno) throws SQLException {
+String sql = "UPDATE alunos SET nome = ?, idade = ?, curso = ? WHERE id = ?";
+try (Connection conn = DatabaseConfig.getConnection();
+PreparedStatement stmt = conn.prepareStatement(sql)) {
+stmt.setString(1, aluno.getNome());
+stmt.setInt(2, aluno.getIdade());
+stmt.setString(3, aluno.getCurso());
+stmt.setInt(4, aluno.getId());
+stmt.executeUpdate();
+}
+}
+public List<Aluno> listarAlunos() throws SQLException {
+List<Aluno> alunos = new ArrayList<>();
+String sql = "SELECT * FROM alunos";
+try (Connection conn = DatabaseConfig.getConnection();
+Statement stmt = conn.createStatement();
+ResultSet rs = stmt.executeQuery(sql)) {
+while (rs.next()) {
+Aluno aluno = new Aluno();
+aluno.setId(rs.getInt("id"));
+aluno.setNome(rs.getString("nome"));
+aluno.setIdade(rs.getInt("idade"));
+aluno.setCurso(rs.getString("curso"));
+alunos.add(aluno);
+}
+}
+return alunos;
+}
+public void excluirAluno(int id) throws SQLException {
+String sql = "DELETE FROM alunos WHERE id = ?";
+try (Connection conn = DatabaseConfig.getConnection();
+PreparedStatement stmt = conn.prepareStatement(sql)) {
+stmt.setInt(1, id);
+stmt.executeUpdate();
+}
+}
+}
+TESTES
+public class AlunoDAOTest {
+public static void main(String[] args) {
+AlunoDAO alunoDAO = new AlunoDAO();
+try {
+Aluno novoAluno = new Aluno();
+novoAluno.setNome("João");
+novoAluno.setIdade(20);
+novoAluno.setCurso("Engenharia");
+alunoDAO.inserirAluno(novoAluno);
+List<Aluno> alunos = alunoDAO.listarAlunos();
+for (Aluno aluno : alunos) {
+System.out.println(aluno.getId() + ": " + aluno.getNome() + " - " + aluno.getIdade()
++ " - " + aluno.getCurso());
+}
+if (!alunos.isEmpty()) {
+Aluno alunoParaAlterar = alunos.get(0);
+alunoParaAlterar.setNome("Maria");
+alunoParaAlterar.setIdade(21);
+alunoParaAlterar.setCurso("Medicina");
+alunoDAO.alterarAluno(alunoParaAlterar);
+}
+if (!alunos.isEmpty()) {
+alunoDAO.excluirAluno(alunos.get(0).getId());
+}
+} catch (SQLException e) {
+e.printStackTrace();
+}
+}
+}
+INTERAÇÃO DO USUARIO
+import java.util.Scanner;
+public class AlunoApp {
+private static final Scanner scanner = new Scanner(System.in);
+public static void main(String[] args) {
+AlunoDAO alunoDAO = new AlunoDAO();
+boolean continuar = true;
+while (continuar) {
+System.out.println("Escolha uma opção:");
+System.out.println("1. Inserir aluno");
+System.out.println("2. Alterar aluno");
+System.out.println("3. Listar alunos");
+System.out.println("4. Excluir aluno");
+System.out.println("5. Sair");
+int opcao = scanner.nextInt();
+scanner.nextLine();
+switch (opcao) {
+case 1:
+inserirAluno(alunoDAO);
+break;
+case 2:
+alterarAluno(alunoDAO);
+break;
+case 3:
+listarAlunos(alunoDAO);
+break;
+case 4:
+excluirAluno(alunoDAO);
+break;
+case 5:
+continuar = false;
+break;
+default:
+System.out.println("Opção inválida.");
+}
+}
+}
+private static void inserirAluno(AlunoDAO alunoDAO) {
+System.out.println("Inserir novo aluno:");
+System.out.print("Nome: ");
+String nome = scanner.nextLine();
+System.out.print("Idade: ");
+int idade = scanner.nextInt();
+scanner.nextLine();
+System.out.print("Curso: ");
+String curso = scanner.nextLine();
+Aluno aluno = new Aluno();
+aluno.setNome(nome);
+aluno.setIdade(idade);
+aluno.setCurso(curso);
+try {
+alunoDAO.inserirAluno(aluno);
+System.out.println("Aluno inserido com sucesso!");
+} catch (SQLException e) {
+e.printStackTrace();
+}
+}
+private static void alterarAluno(AlunoDAO alunoDAO) {
+System.out.print("ID do aluno a ser alterado: ");
+int id = scanner.nextInt();
+scanner.nextLine();
+System.out.print("Novo nome: ");
+String nome = scanner.nextLine();
+System.out.print("Nova idade: ");
+int idade = scanner.nextInt();
+scanner.nextLine();
+System.out.print("Novo curso: ");
+String curso = scanner.nextLine();
+Aluno aluno = new Aluno();
+aluno.setId(id);
+aluno.setNome(nome);
+aluno.setIdade(idade);
+aluno.setCurso(curso);
+try {
+alunoDAO.alterarAluno(aluno);
+System.out.println("Aluno alterado com sucesso!");
+} catch (SQLException e) {
+e.printStackTrace();
+}
+}
+private static void listarAlunos(AlunoDAO alunoDAO) {
+try {
+List<Aluno> alunos = alunoDAO.listarAlunos();
+for (Aluno aluno : alunos) {
+System.out.println(aluno.getId() + ": " + aluno.getNome() + " - " + aluno.getIdade()
++ " - " + aluno.getCurso());
+}
+} catch (SQLException e) {
+e.printStackTrace();
+}
+}
+private static void excluirAluno(AlunoDAO alunoDAO) {
+System.out.print("ID do aluno a ser excluído: ");
+int id = scanner.nextInt();
+scanner.nextLine();
+try {
+alunoDAO.excluirAluno(id);
+System.out.println("Aluno excluído com sucesso!");
+} catch (SQLException e) {
+e.printStackTrace();
+}
+}
+}
